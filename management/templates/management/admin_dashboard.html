@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Admin Command Center | Noah's Ark</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                gold: "#b4781e",
+                dark: "#1a1814",
+                "dark-lighter": "#26231e",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background-color: #1a1814;
+        color: #ffffff;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col bg-brand-dark">
+    <!-- Navbar -->
+    <header class="w-full border-b border-brand-dark-lighter bg-brand-dark-lighter/80 backdrop-blur sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-brand-gold rounded-lg flex items-center justify-center flex-shrink-0">
+            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            </svg>
+          </div>
+          <div>
+            <span class="font-bold text-lg block leading-none">Noah's Ark</span>
+            <span class="text-[10px] text-gray-500 tracking-wider uppercase font-semibold">Admin Command Center</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 sm:gap-4">
+          <span class="text-xs text-gray-400 hidden sm:inline">Logged in as <strong class="text-white">Admin</strong></span>
+          <a class="text-xs bg-brand-gold px-3.5 py-1.5 rounded-lg font-semibold hover:bg-opacity-95 transition-all text-white" href="{% url 'admin_logout' %}">Sign Out</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-grow p-6 max-w-7xl w-full mx-auto space-y-8">
+      
+      {% if messages %}
+      <div class="space-y-2">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl text-sm font-medium bg-green-900/40 text-green-200 border border-green-800/50">
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Row 1: Quick Stats -->
+      <section class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-brand-dark-lighter border border-brand-dark-lighter p-6 rounded-2xl shadow-xl flex flex-col justify-between scroll-reveal opacity-0 translate-y-6 transition-all duration-500 ease-out">
+          <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Present Today</span>
+          <div class="mt-4 flex items-baseline gap-2">
+            <span class="text-4xl font-bold text-white">{{ present_today }}</span>
+            <span class="text-xs text-gray-500">/ {{ total_active }} active</span>
+          </div>
+          <!-- Simple progress bar -->
+          <div class="w-full bg-brand-dark rounded-full h-1.5 mt-4">
+            <div class="bg-brand-gold h-1.5 rounded-full" style="width: {% if total_active %}{{ present_today|add:0|floatformat:0 }}%{% else %}0%{% endif %}"></div>
+          </div>
+        </div>
+
+        <div class="bg-brand-dark-lighter border border-brand-dark-lighter p-6 rounded-2xl shadow-xl flex flex-col justify-between scroll-reveal opacity-0 translate-y-6 transition-all duration-500 ease-out" style="transition-delay: 75ms;">
+          <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Absent Today</span>
+          <div class="mt-4">
+            <span class="text-4xl font-bold text-red-400">{{ absent_today }}</span>
+          </div>
+          <span class="text-[10px] text-gray-500 mt-2 block">Requires follow-up if consecutive</span>
+        </div>
+
+        <div class="bg-brand-dark-lighter border border-brand-dark-lighter p-6 rounded-2xl shadow-xl flex flex-col justify-between scroll-reveal opacity-0 translate-y-6 transition-all duration-500 ease-out" style="transition-delay: 150ms;">
+          <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Sunday Reference</span>
+          <div class="mt-4">
+            <span class="text-2xl font-bold text-white font-mono">{{ ref_date|date:"d M Y" }}</span>
+          </div>
+          <span class="text-[10px] text-gray-500 mt-2 block">Current sunday cycle</span>
+        </div>
+
+        <!-- Sunday PIN Setup -->
+        <div class="bg-brand-dark-lighter border border-brand-dark-lighter p-6 rounded-2xl shadow-xl flex flex-col justify-between scroll-reveal opacity-0 translate-y-6 transition-all duration-500 ease-out" style="transition-delay: 225ms;">
+          <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Active Sunday PIN</span>
+          <form method="POST" class="mt-4 flex gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="update_pin" value="1" />
+            <input
+              type="text"
+              name="sunday_pin"
+              value="{{ sunday_pin }}"
+              class="w-full bg-brand-dark border border-brand-dark/50 rounded-lg px-3 py-1.5 text-center font-mono font-bold tracking-widest text-brand-gold text-lg"
+            />
+            <button type="submit" class="bg-brand-gold/10 hover:bg-brand-gold text-brand-gold hover:text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all border border-brand-gold/30">
+              Save
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Row 2: Approvals & Exports -->
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+        
+        <!-- Approvals Console (2/3 width) -->
+        <div class="md:col-span-2 bg-brand-dark-lighter border border-brand-dark-lighter p-6 rounded-2xl shadow-xl space-y-6 scroll-reveal opacity-0 translate-y-6 transition-all duration-500 ease-out">
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <div>
+              <h2 class="text-lg font-bold">Pending Approval ({{ pending_workers|length }})</h2>
+              <p class="text-gray-400 text-xs mt-0.5">Workers awaiting activation to check-in.</p>
+            </div>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+              <!-- POST, not a link: these send real SMS and email, so a refresh
+                   or browser prefetch must not be able to re-fire them. -->
+              <form method="POST" action="{% url 'send_reminders_trigger' %}"
+                    onsubmit="return confirm('Send the Sunday check-in reminder to ALL {{ total_active }} active workers now?\n\nThis sends real SMS and email.');">
+                {% csrf_token %}
+                <button type="submit" class="w-full bg-green-900/10 hover:bg-green-900 text-green-400 hover:text-white border border-green-800/30 px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2" title="Send the 8am service reminder to all active workers">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                  </svg>
+                  Send Sunday Reminder
+                </button>
+              </form>
+              <form method="POST" action="{% url 'run_reminders_trigger' %}"
+                    onsubmit="return confirm('Run the birthday and welfare check now?\n\nBirthday wishes go to anyone whose birthday is today, and follow-ups go to workers who have missed 3+ Sundays. This sends real SMS and email.');">
+                {% csrf_token %}
+                <button type="submit" class="w-full bg-blue-900/10 hover:bg-blue-900 text-blue-400 hover:text-white border border-blue-800/30 px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2" title="Send birthday wishes and welfare follow-ups">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.02 6.02 0 00-4.902-5.903m0 0A6.002 6.002 0 0212 5a6 6 0 00-6 6v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                  </svg>
+                  Birthday &amp; Welfare
+                </button>
+              </form>
+              <a href="{% url 'export_workers' %}?type=workers" class="bg-brand-gold/10 hover:bg-brand-gold text-brand-gold hover:text-white border border-brand-gold/30 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5" title="Export all workers except members">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                Export Workers
+              </a>
+              <a href="{% url 'export_workers' %}?type=members" class="bg-yellow-950/20 hover:bg-yellow-900 text-yellow-500 hover:text-white border border-yellow-800/30 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5" title="Export members only">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                Export Members
+              </a>
+            </div>
+          </div>
+
+          <!-- Desktop approvals view -->
+          <div class="hidden md:block overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="border-b border-brand-dark/50 text-gray-400 text-xs uppercase tracking-wider">
+                  <th class="pb-3 font-semibold">Name</th>
+                  <th class="pb-3 font-semibold">Department</th>
+                  <th class="pb-3 font-semibold">Contact</th>
+                  <th class="pb-3 font-semibold text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-brand-dark/30">
+                {% if pending_workers %}
+                  {% for worker in pending_workers %}
+                    <tr class="group">
+                      <td class="py-4 font-semibold text-white">
+                        {{ worker.full_name }}
+                        <span class="block font-mono text-[10px] text-gray-500 mt-0.5">{{ worker.nark_code }}</span>
+                      </td>
+                      <td class="py-4 text-gray-300">{{ worker.department.name }}</td>
+                      <td class="py-4 text-xs text-gray-400">
+                        {{ worker.phone_number }}<br/>{{ worker.email }}
+                      </td>
+                      <td class="py-4 text-right">
+                        <a href="{% url 'approve_worker' worker.id %}" class="bg-brand-gold hover:bg-opacity-90 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white shadow transition-all inline-block">
+                          Approve
+                        </a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="4" class="py-8 text-center text-xs text-gray-500 italic">
+                      No pending approvals at the moment.
+                    </td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile approvals card list view -->
+          <div class="block md:hidden space-y-4">
+            {% if pending_workers %}
+              {% for worker in pending_workers %}
+                <div class="bg-brand-dark/40 border border-brand-dark-lighter p-4 rounded-xl space-y-3">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <h4 class="font-bold text-white text-sm">{{ worker.full_name }}</h4>
+                      <span class="font-mono text-[10px] text-gray-500">{{ worker.nark_code }}</span>
+                    </div>
+                    <span class="text-xs bg-brand-gold/10 text-brand-gold border border-brand-gold/20 px-2 py-0.5 rounded font-medium">
+                      {{ worker.department.name }}
+                    </span>
+                  </div>
+                  <div class="text-xs text-gray-400 space-y-0.5">
+                    <p><strong class="text-gray-300">Phone:</strong> {{ worker.phone_number }}</p>
+                    <p><strong class="text-gray-300">Email:</strong> {{ worker.email|default:"N/A" }}</p>
+                  </div>
+                  <div class="pt-2">
+                    <a href="{% url 'approve_worker' worker.id %}" class="w-full bg-brand-gold hover:bg-opacity-90 py-2.5 rounded-lg text-xs font-bold text-white shadow transition-all block text-center">
+                      Approve Worker
+                    </a>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="text-center py-6 text-xs text-gray-500 italic">No pending approvals at the moment.</p>
+            {% endif %}
+          </div>
+
+        <!-- Attendance by Department (1/3 width) -->
+        <div class="bg-brand-dark-lighter border border-brand-dark-lighter p-6 rounded-2xl shadow-xl space-y-6 scroll-reveal opacity-0 translate-y-6 transition-all duration-500 ease-out" style="transition-delay: 100ms;">
+          <div>
+            <h2 class="text-lg font-bold">Department Health</h2>
+            <p class="text-gray-400 text-xs mt-0.5">Sunday attendance rate by department.</p>
+          </div>
+
+          <div class="space-y-4">
+            {% for stat in dept_stats %}
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs font-semibold">
+                <span class="text-gray-300">{{ stat.department.name }}</span>
+                <span class="text-brand-gold">{{ stat.present }} / {{ stat.active }} <span class="text-gray-500 font-normal">({{ stat.percentage }}%)</span></span>
+              </div>
+              <div class="w-full bg-brand-dark rounded-full h-2">
+                <div class="bg-brand-gold h-2 rounded-full" style="width: {{ stat.percentage }}%"></div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Row 3: Welfare Command Center -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <!-- Red Flags: 3+ Consecutive Misses -->
+        <div class="bg-brand-dark-lighter border border-red-900/20 p-6 rounded-2xl shadow-xl space-y-6 scroll-reveal opacity-0 translate-y-6 transition-all duration-500 ease-out">
+          <div class="flex items-center gap-3">
+            <span class="w-3.5 h-3.5 rounded-full bg-red-500 animate-pulse"></span>
+            <div>
+              <h2 class="text-lg font-bold">Red Flag Alerts (3+ Misses)</h2>
+              <p class="text-gray-400 text-xs mt-0.5">Critical absence. Reach out immediately.</p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            {% if red_flag_workers %}
+              {% for item in red_flag_workers %}
+                <div class="bg-brand-dark/40 border border-brand-dark-lighter p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 class="font-bold text-white text-sm">{{ item.worker.full_name }}</h4>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ item.worker.department.name }} • Missed: <strong class="text-red-400">{{ item.misses }} Sundays</strong></p>
+                  </div>
+                  <!-- Contact Actions -->
+                  <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <a href="tel:{{ item.worker.phone_number }}" class="p-2.5 bg-brand-dark-lighter hover:bg-brand-dark rounded-lg text-gray-400 hover:text-white border border-brand-dark/30 transition-all flex-grow sm:flex-grow-0 text-center flex justify-center" title="Call Worker">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                      </svg>
+                    </a>
+                    <a href="https://wa.me/{{ item.worker.phone_number }}?text=Hello%20{{ item.worker.full_name }}%2C%20we%20missed%20you%20at%20church%20recently%21%20Hope%20you%20are%20doing%20great%3F" target="_blank" class="p-2.5 bg-green-950/20 hover:bg-green-950/40 rounded-lg text-green-400 hover:text-green-300 border border-green-900/30 transition-all flex-grow sm:flex-grow-0 text-center flex justify-center" title="WhatsApp Message">
+                      <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.625 1.449 5.49 0 9.951-4.43 9.954-9.878.001-2.639-1.03-5.12-2.906-6.995C16.446 1.854 13.98 1.84 12.012 1.84c-5.49 0-9.952 4.431-9.955 9.88-.001 2.052.541 4.016 1.571 5.8l-.297.854-1.008 3.673 3.791-1.042-.062-.057z"></path>
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="text-center py-6 text-xs text-gray-500 italic">No red flags flagged. Stellar attendance! 🎉</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Yellow Flags: 2 Consecutive Misses -->
+        <div class="bg-brand-dark-lighter border border-yellow-900/20 p-6 rounded-2xl shadow-xl space-y-6 scroll-reveal opacity-0 translate-y-6 transition-all duration-500 ease-out" style="transition-delay: 100ms;">
+          <div class="flex items-center gap-3">
+            <span class="w-3.5 h-3.5 rounded-full bg-yellow-500"></span>
+            <div>
+              <h2 class="text-lg font-bold">Yellow Flag Alerts (2 Misses)</h2>
+              <p class="text-gray-400 text-xs mt-0.5">Warning list. Watch for consecutive absences.</p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            {% if yellow_flag_workers %}
+              {% for item in yellow_flag_workers %}
+                <div class="bg-brand-dark/40 border border-brand-dark-lighter p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 class="font-bold text-white text-sm">{{ item.worker.full_name }}</h4>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ item.worker.department.name }} • Missed: <strong class="text-yellow-400">2 Sundays</strong></p>
+                  </div>
+                  <!-- Contact Actions -->
+                  <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <a href="tel:{{ item.worker.phone_number }}" class="p-2.5 bg-brand-dark-lighter hover:bg-brand-dark rounded-lg text-gray-400 hover:text-white border border-brand-dark/30 transition-all flex-grow sm:flex-grow-0 text-center flex justify-center" title="Call Worker">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="text-center py-6 text-xs text-gray-500 italic">No yellow flags flagged.</p>
+            {% endif %}
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 border-t border-brand-dark-lighter text-center text-xs text-gray-600 mt-auto">
+      © 2026 Noah's Ark Church Worker System.
+    </footer>
+    <script>
+      // Scroll Reveal Animation using Intersection Observer
+      document.addEventListener('DOMContentLoaded', () => {
+        const revealElements = document.querySelectorAll('.scroll-reveal');
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.remove('opacity-0', 'translate-y-6');
+              entry.target.classList.add('opacity-100', 'translate-y-0');
+              observer.unobserve(entry.target);
+            }
+          });
+        }, {
+          threshold: 0.05
+        });
+        revealElements.forEach(el => observer.observe(el));
+      });
+    </script>
+  </body>
+</html>

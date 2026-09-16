@@ -1,0 +1,3 @@
+# Keeps the logs directory present. Scheduled task output is appended here:
+#   sunday_reminder.log   - Sunday check-in reminder runs
+#   daily_reminders.log   - birthday and welfare runs

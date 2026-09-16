@@ -1,0 +1,67 @@
+css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Stewardship & Covenant Palette */
+  --primary: #5d4037;        /* Deep Wood Brown */
+  --primary-hover: #4e342e;
+  --surface: #f9f9f6;        /* Soft Paper White */
+  --on-surface: #1c1b18;     /* Charcoal Text */
+  --accent: #b38867;         /* Warm Sand */
+  
+  /* Status Colors */
+  --success: #2e7d32;
+  --warning: #fbc02d;
+  --error: #c62828;
+
+  /* Shapes */
+  --radius-card: 12px;
+  --radius-btn: 8px;
+}
+
+/* Custom Component Classes */
+.btn-primary {
+  @apply bg-[#5d4037] text-white px-6 py-3 rounded-lg font-bold transition-all hover:bg-[#4e342e] active:scale-95 text-center;
+}
+
+.input-field {
+  @apply w-full p-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#5d4037] focus:outline-none transition-all;
+}
+
+.card-bento {
+  @apply bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow;
+}
+```
+
+### 3. Update your HTML to "See" the CSS
+For Django to serve this file, you must add `{% load static %}` to the very top of your HTML files.
+
+Update your `management/templates/management/admin_setup.html` (and later your Login page) to include these lines in the `<head>`:
+
+```html
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#5d4037',
+              surface: '#f9f9f6',
+            }
+          }
+        }
+      }
+    </script>
+    <!-- Your Clean CSS File -->
+    <link rel="stylesheet" href="{% static 'management/css/style.css' %}">
+    <title>Noah's Ark | Setup</title>
+</head>

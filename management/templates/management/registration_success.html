@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Registration Completed | Noah's Ark</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                gold: "#b4781e",
+                dark: "#1a1814",
+                "dark-lighter": "#26231e",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background-color: #1a1814;
+        color: #ffffff;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col justify-between">
+    <!-- Header -->
+    <header class="w-full px-4 py-4 flex items-center justify-between border-b border-brand-dark-lighter">
+      <div class="flex items-center gap-3">
+        <a href="{% url 'home' %}" class="w-10 h-10 bg-brand-gold rounded-lg flex items-center justify-center">
+          <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+        </a>
+        <span class="font-bold text-lg">Noah's Ark</span>
+      </div>
+      <a class="text-sm hover:text-brand-gold transition-colors" href="{% url 'home' %}">Back to Home</a>
+    </header>
+
+    <!-- Main Success Screen -->
+    <main class="flex-grow flex items-center justify-center p-6">
+      <div class="max-w-md w-full bg-brand-dark-lighter border border-brand-dark-lighter p-8 rounded-2xl shadow-xl text-center space-y-6 scroll-reveal opacity-0 translate-y-6 transition-all duration-500 ease-out">
+        
+        <!-- Success Icon -->
+        <div class="w-16 h-16 bg-brand-gold/10 rounded-full flex items-center justify-center mx-auto border border-brand-gold/30 animate-pulse">
+          <svg class="h-8 w-8 text-brand-gold animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+
+        <div class="space-y-2">
+          <h2 class="text-2xl font-bold">Registration Completed!</h2>
+          <p class="text-gray-400 text-sm">Welcome to Noah's Ark. Your profile has been successfully created.</p>
+        </div>
+
+        <!-- NARK Code Card -->
+        <div class="bg-brand-dark p-6 rounded-xl border border-brand-dark-lighter space-y-3">
+          <span class="text-xs text-gray-500 uppercase tracking-widest font-bold">Your Unique Check-In Code</span>
+          <div class="font-mono text-3xl font-bold tracking-widest text-brand-gold bg-brand-dark-lighter py-3 rounded-lg border border-brand-dark/20 select-all">
+            {{ nark_code }}
+          </div>
+          <p class="text-[10px] text-gray-500">Take a screenshot or write this code down. You will use it for Sunday check-ins.</p>
+        </div>
+
+        <!-- Next Steps Instruction -->
+        <div class="bg-yellow-950/20 border border-yellow-900/30 rounded-xl p-4 text-left text-xs text-yellow-200">
+          <strong class="block mb-1">Status: Pending Approval</strong>
+          Your registration has been submitted to the Admin for approval. You will receive an activation alert via WhatsApp or email once approved.
+        </div>
+
+        <div class="pt-4">
+          <a
+            class="w-full bg-brand-gold hover:bg-opacity-90 py-3.5 rounded-xl font-bold text-center inline-block shadow-lg transition-transform active:scale-[0.98]"
+            href="{% url 'home' %}"
+          >
+            Back to Homepage
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 border-t border-brand-dark-lighter text-center text-xs text-gray-600 space-y-2">
+      <p>© 2026 Noah's Ark Church Worker System.</p>
+      <div>
+        <a href="{% url 'admin_login' %}" class="text-[11px] text-gray-700 hover:text-gray-600 transition-colors">Admin Portal</a>
+      </div>
+    </footer>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const revealElements = document.querySelectorAll('.scroll-reveal');
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.remove('opacity-0', 'translate-y-6');
+              entry.target.classList.add('opacity-100', 'translate-y-0');
+              observer.unobserve(entry.target);
+            }
+          });
+        }, {
+          threshold: 0.05
+        });
+        revealElements.forEach(el => observer.observe(el));
+      });
+    </script>
+  </body>
+</html>

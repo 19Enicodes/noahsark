@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Admin Login | Noah's Ark</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                gold: "#b4781e",
+                dark: "#1a1814",
+                "dark-lighter": "#26231e",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background-color: #1a1814;
+        color: #ffffff;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col justify-between">
+    <!-- Header -->
+    <header class="w-full px-4 py-4 flex items-center justify-between border-b border-brand-dark-lighter">
+      <div class="flex items-center gap-3">
+        <a href="{% url 'home' %}" class="w-10 h-10 bg-brand-gold rounded-lg flex items-center justify-center">
+          <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+        </a>
+        <span class="font-bold text-lg">Noah's Ark</span>
+      </div>
+      <a class="text-sm hover:text-brand-gold transition-colors" href="{% url 'home' %}">Back to Home</a>
+    </header>
+
+    <!-- Main Login Card -->
+    <main class="flex-grow flex items-center justify-center p-6">
+      <div class="max-w-md w-full bg-brand-dark-lighter border border-brand-dark-lighter p-8 rounded-2xl shadow-xl">
+        <div class="text-center mb-8">
+          <div class="w-16 h-16 bg-brand-gold/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-brand-gold/30">
+            <svg class="h-8 w-8 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 009 11V7a4 4 0 00-8 0v4c0 2.502-.486 4.866-1.36 7.01M12 11c0-3.517 1.009-6.799 2.753-9.571m3.44 2.04l-.054.09A13.916 13.916 0 0015 11v4c0 2.502.486 4.866 1.36 7.01M9 16h6m-3-3v3m-3-12h6"></path>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold">Admin Portal</h2>
+          <p class="text-gray-400 mt-2 text-sm">Enter your master administrator credentials to access the command center.</p>
+        </div>
+
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+          {% for message in messages %}
+          <div class="p-3.5 rounded-lg bg-red-900/50 text-red-200 border border-red-800 text-sm text-center">
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" class="space-y-6">
+          {% csrf_token %}
+          
+          <div class="space-y-1">
+            <label class="block text-sm font-medium text-gray-300" for="username">Username</label>
+            <input
+              class="w-full bg-brand-dark border border-brand-dark/50 rounded-lg p-3.5 text-white focus:ring-brand-gold focus:border-brand-gold placeholder-gray-600 text-sm"
+              id="username"
+              name="username"
+              placeholder="admin"
+              required
+              type="text"
+            />
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex items-center justify-between">
+              <label class="block text-sm font-medium text-gray-300" for="password">Password</label>
+            </div>
+            <input
+              class="w-full bg-brand-dark border border-brand-dark/50 rounded-lg p-3.5 text-white focus:ring-brand-gold focus:border-brand-gold placeholder-gray-600 text-sm"
+              id="password"
+              name="password"
+              placeholder="••••••••••••"
+              required
+              type="password"
+            />
+          </div>
+
+          <button
+            class="w-full bg-brand-gold hover:bg-opacity-90 py-3.5 rounded-xl font-bold text-lg shadow-lg transition-transform active:scale-[0.98] mt-2"
+            type="submit"
+          >
+            Authenticate Admin
+          </button>
+        </form>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 border-t border-brand-dark-lighter text-center text-xs text-gray-600">
+      © 2026 Noah's Ark Church Worker System.
+    </footer>
+  </body>
+</html>

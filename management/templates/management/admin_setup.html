@@ -1,0 +1,395 @@
+<!doctype html>
+
+<html class="light" lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Admin Setup | Noah’s Ark</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-tertiary-fixed-variant": "#494641",
+            "on-primary-fixed": "#2c160e",
+            "on-secondary-container": "#003567",
+            "inverse-primary": "#e7bdb1",
+            secondary: "#005faf",
+            background: "#f9f9f6",
+            "secondary-fixed-dim": "#a5c8ff",
+            "tertiary-container": "#494741",
+            "on-secondary": "#ffffff",
+            "surface-tint": "#77574d",
+            "on-primary-fixed-variant": "#5d4037",
+            "on-tertiary": "#ffffff",
+            "outline-variant": "#d4c3be",
+            "secondary-fixed": "#d4e3ff",
+            "tertiary-fixed": "#e7e2da",
+            "surface-container": "#eeeeeb",
+            "primary-fixed-dim": "#e7bdb1",
+            error: "#ba1a1a",
+            "on-primary": "#ffffff",
+            "surface-container-highest": "#e2e3e0",
+            "on-surface": "#1a1c1a",
+            "on-background": "#1a1c1a",
+            "primary-fixed": "#ffdbd0",
+            "surface-dim": "#dadad7",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary-fixed-variant": "#004786",
+            "on-secondary-fixed": "#001c3a",
+            "error-container": "#ffdad6",
+            tertiary: "#33312b",
+            "secondary-container": "#54a0fe",
+            "inverse-surface": "#2f312f",
+            "surface-container-high": "#e8e8e5",
+            "on-tertiary-container": "#bab5ae",
+            "on-error-container": "#93000a",
+            "surface-variant": "#e2e3e0",
+            "surface-container-low": "#f3f4f1",
+            primary: "#442a22",
+            "on-error": "#ffffff",
+            "on-tertiary-fixed": "#1d1b17",
+            "tertiary-fixed-dim": "#cbc6be",
+            "primary-container": "#5d4037",
+            "on-surface-variant": "#504441",
+            "inverse-on-surface": "#f1f1ee",
+            outline: "#827470",
+            "on-primary-container": "#d4ada1",
+            surface: "#f9f9f6",
+            "surface-bright": "#f9f9f6",
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            full: "9999px",
+          },
+          spacing: {
+            xs: "4px",
+            "margin-mobile": "16px",
+            lg: "24px",
+            sm: "8px",
+            "container-max": "1280px",
+            base: "4px",
+            gutter: "24px",
+            xl: "40px",
+            md: "16px",
+          },
+          fontFamily: {
+            "title-lg": ["Inter"],
+            "body-lg": ["Inter"],
+            "display-lg": ["Montserrat"],
+            "headline-lg": ["Montserrat"],
+            "headline-md": ["Montserrat"],
+            "body-md": ["Inter"],
+            "label-sm": ["Inter"],
+            "label-lg": ["Inter"],
+            "headline-lg-mobile": ["Montserrat"],
+          },
+          fontSize: {
+            "title-lg": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+            "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+            "display-lg": [
+              "48px",
+              {
+                lineHeight: "56px",
+                letterSpacing: "-0.02em",
+                fontWeight: "700",
+              },
+            ],
+            "headline-lg": [
+              "32px",
+              { lineHeight: "40px", fontWeight: "600" },
+            ],
+            "headline-md": [
+              "24px",
+              { lineHeight: "32px", fontWeight: "600" },
+            ],
+            "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+            "label-sm": [
+              "12px",
+              {
+                lineHeight: "16px",
+                letterSpacing: "0.04em",
+                fontWeight: "500",
+              },
+            ],
+            "label-lg": [
+              "14px",
+              {
+                lineHeight: "20px",
+                letterSpacing: "0.01em",
+                fontWeight: "600",
+              },
+            ],
+            "headline-lg-mobile": [
+              "24px",
+              { lineHeight: "32px", fontWeight: "600" },
+            ],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings:
+        "FILL" 0,
+        "wght" 400,
+        "GRAD" 0,
+        "opsz" 24;
+    }
+
+    .bg-hero-pattern {
+      background:
+        linear-gradient(rgba(68, 42, 34, 0.94), rgba(68, 42, 34, 0.98)),
+        url("https://images.unsplash.com/photo-1544427928-142ec24760d7?q=80&w=2000");
+      background-size: cover;
+      background-position: center;
+    }
+
+    .bento-card {
+      transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+    }
+
+    .bento-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px -10px rgba(68, 42, 34, 0.15);
+    }
+
+    .input-focus-ring:focus {
+      outline: none;
+      border-color: #005faf;
+      box-shadow: 0 0 0 2px rgba(0, 95, 175, 0.1);
+    }
+  </style>
+  <style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+
+<body class="bg-surface text-on-surface min-h-screen flex flex-col font-body-md overflow-x-hidden">
+  <!-- Header / TopAppBar (Reduced for Onboarding) -->
+  <header class="w-full bg-surface py-md border-b border-outline-variant shadow-sm z-50">
+    <div class="max-w-container-max mx-auto px-md flex justify-between items-center">
+      <div class="flex items-center gap-sm">
+        <div class="bg-primary p-2 rounded-lg text-on-primary">
+          <span class="material-symbols-outlined">church</span>
+        </div>
+        <h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tight">
+          Noah’s Ark
+        </h1>
+      </div>
+      <div class="hidden md:flex items-center gap-md">
+        <span class="text-on-surface-variant font-label-lg">First Time Setup</span>
+        <span
+          class="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-label-sm">v1.0.4</span>
+      </div>
+    </div>
+  </header>
+  <main class="flex-grow flex items-center justify-center py-xl px-md relative">
+    <!-- Abstract Background Decorative Elements -->
+    <div class="absolute inset-0 pointer-events-none opacity-5 overflow-hidden">
+      <div
+        class="absolute top-0 right-0 w-[600px] h-[600px] bg-primary rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2">
+      </div>
+      <div
+        class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2">
+      </div>
+    </div>
+    <div class="max-w-[1100px] w-full grid grid-cols-1 md:grid-cols-12 gap-gutter items-start">
+      <!-- Left Column: Context & Branding (Asymmetric) -->
+      <div class="md:col-span-5 space-y-lg order-2 md:order-1">
+        <div class="space-y-md">
+          <h2 class="font-headline-lg text-headline-lg text-primary leading-tight">
+            Welcome to Stewardship
+          </h2>
+          <p class="font-body-lg text-on-surface-variant">
+            You are embarking on the first step of digital transformation for
+            your community. This master account will hold the keys to manage
+            your church workers, schedules and data.
+          </p>
+        </div>
+        <!-- Info Cards (Bento Style) -->
+        <div class="grid grid-cols-1 gap-md">
+          <div
+            class="bento-card p-md bg-surface-container-low rounded-xl border border-outline-variant flex gap-md items-start">
+            <div class="p-2 bg-primary-fixed rounded-lg text-primary">
+              <span class="material-symbols-outlined">security</span>
+            </div>
+            <div>
+              <h4 class="font-title-lg text-title-lg text-on-surface">
+                Privacy
+              </h4>
+              <p class="text-body-md text-on-surface-variant">
+                Your data is encrypted and managed with the highest standard
+                of integrity.
+              </p>
+            </div>
+          </div>
+          <div
+            class="bento-card p-md bg-surface-container-low rounded-xl border border-outline-variant flex gap-md items-start">
+            <div class="p-2 bg-secondary-fixed rounded-lg text-secondary">
+              <span class="material-symbols-outlined">group_add</span>
+            </div>
+            <div>
+              <h4 class="font-title-lg text-title-lg text-on-surface">
+                Master Control
+              </h4>
+              <p class="text-body-md text-on-surface-variant">
+                As the first admin, you will have the authority to manage the
+                church's site.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="pt-md">
+          <img alt="Church Interior"
+            class="rounded-2xl shadow-lg w-full h-48 object-cover brightness-90 border border-outline-variant"
+            data-alt="A serene cinematic shot of a modern sunlight-filled church interior with polished dark wood pews and architectural arches. The lighting is soft and golden, creating a sense of warmth and divine order. The style is professional and clean, using a palette of deep browns and soft creams to convey stability and community."
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBu3ikF8nctxivLVsRIpNnNhveg9iRLSywcxHWlz3aAlvD_4c7zOf0hwiK23CtNecu5WK-IHlkmagT5-4TmLUONadpvmb5kSCECEWuiGOcT_X9sTKKKlom2re-_BTlRgNeiWp-aE1ReiQiHByhBmBM-ijqFsubga5RKBScBF4vpsR6TczgARM0LwTlMrb4uVjTDaRd7TYdp0TwWAt0RbR9NaOEv3lHQkiQSXlnE00efAnFL0MEhlPBUbbUwkTVzbPX_jozLP14oJlo" />
+        </div>
+      </div>
+      <!-- Right Column: Setup Form (Glassmorphism/Card) -->
+      <div class="md:col-span-7 order-1 md:order-2">
+        <div
+          class="bg-surface-container-lowest rounded-[2rem] p-lg md:p-xl shadow-[0_20px_50px_rgba(68,42,34,0.08)] border border-outline-variant relative overflow-hidden">
+          <!-- Subtle Gold Accent Bar -->
+          <div
+            class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-secondary to-primary-container">
+          </div>
+          <div class="mb-lg">
+            <h3 class="font-headline-md text-headline-md text-primary mb-2">
+              Create Admin Account
+            </h3>
+            <p class="font-body-md text-on-surface-variant">
+              Establish the Admin for your congregation's worker system.
+          </div>
+          <form class="space-y-lg" method="POST">
+
+            {% csrf_token %}
+            
+            {% if messages %}
+            <div class="mb-6 space-y-2">
+              {% for message in messages %}
+              <div class="p-4 rounded-lg text-sm {% if message.tags == 'error' %}bg-red-100 text-red-700 border border-red-300{% else %}bg-green-100 text-green-700 border border-green-300{% endif %}">
+                {{ message }}
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="space-y-xs">
+              <label class="font-label-lg text-on-surface px-1" for="username">Username</label>
+              <div class="relative group">
+                <span
+                  class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-secondary transition-colors">person</span>
+                <input
+                  class="w-full pl-12 pr-4 py-4 bg-surface-container rounded-xl border-transparent focus:bg-surface focus:border-secondary transition-all input-focus-ring font-body-lg text-on-surface"
+                  id="username" name="username" placeholder="E.g. admin" type="text" required />
+              </div>
+            </div>
+            <div class="space-y-xs">
+              <label class="font-label-lg text-on-surface px-1" for="email">Admin Email Address</label>
+              <div class="relative group">
+                <span
+                  class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-secondary transition-colors">mail</span>
+                <input
+                  class="w-full pl-12 pr-4 py-4 bg-surface-container rounded-xl border-transparent focus:bg-surface focus:border-secondary transition-all input-focus-ring font-body-lg text-on-surface"
+                  id="email" name="email" placeholder="church.admin@noahsark.org" type="email" required />
+              </div>
+            </div>
+            <div class="space-y-xs">
+              <label class="font-label-lg text-on-surface px-1" for="password">Master Password</label>
+              <div class="relative group">
+                <span
+                  class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-secondary transition-colors">lock</span>
+                <input
+                  class="w-full pl-12 pr-12 py-4 bg-surface-container rounded-xl border-transparent focus:bg-surface focus:border-secondary transition-all input-focus-ring font-body-lg text-on-surface"
+                  id="password" name="password" placeholder="••••••••••••" type="password" required />
+              </div>
+            </div>
+            <div class="space-y-xs">
+              <label class="font-label-lg text-on-surface px-1" for="confirm_password">Confirm Password</label>
+              <div class="relative group">
+                <span
+                  class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-secondary transition-colors">lock</span>
+                <input
+                  class="w-full pl-12 pr-12 py-4 bg-surface-container rounded-xl border-transparent focus:bg-surface focus:border-secondary transition-all input-focus-ring font-body-lg text-on-surface"
+                  id="confirm_password" name="confirm_password" placeholder="••••••••••••" type="password" required />
+              </div>
+            </div>
+            <div class="pt-md">
+              <button
+                class="w-full bg-primary hover:bg-primary-container text-on-primary font-title-lg py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-md group"
+                type="submit">
+                <span>Create Admin Account</span>
+                <span
+                  class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+              </button>
+            </div>
+            <div class="flex items-center gap-md py-md">
+              <div class="flex-grow h-px bg-outline-variant"></div>
+              <span class="font-label-sm text-outline-variant">OR</span>
+              <div class="flex-grow h-px bg-outline-variant"></div>
+            </div>
+            <div class="text-center">
+              <p class="font-body-md text-on-surface-variant">
+                Already have an instance set up?
+                <a class="text-secondary font-semibold hover:underline" href="{% url 'admin_login' %}">Connect to existing Ark</a>
+              </p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+  <!-- Simple Footer -->
+  <footer class="w-full py-lg border-t border-outline-variant mt-auto">
+    <div class="max-w-container-max mx-auto px-md flex flex-col md:flex-row justify-between items-center gap-md">
+      <p class="font-label-sm text-on-surface-variant">
+        © 2026 Noah’s Ark Ministry Management. All rights reserved.
+      </p>
+      <div class="flex gap-lg">
+        <a class="font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of
+          Service</a>
+        <a class="font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy
+          Covenant</a>
+        <a class="font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Support</a>
+      </div>
+    </div>
+  </footer>
+  <script>
+    // Toggle Password Visibility
+    document.querySelectorAll("button[type='button']").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const input = btn.previousElementSibling;
+        const icon = btn.querySelector('.material-symbols-outlined');
+        if (input.type === "password") {
+          input.type = "text";
+          icon.textContent = "visibility_off";
+        } else {
+          input.type = "password";
+          icon.textContent = "visibility";
+        }
+      });
+    });
+  </script>
+</body>
+</html>
