@@ -64,23 +64,39 @@ This sends one message to you, prints exactly what the SMS will look like and
 how many pages it costs, and writes nothing to the database. Get this working
 before running anything else.
 
-### 5. Set up the scheduled jobs
+### 5. Automated Background Scheduling
 
-See `scripts/README.md`.
+The system includes a built-in automated background daemon (`management/scheduler.py`) that boots automatically with the web server (e.g. on Railway or local `runserver`):
+* **07:00 AM WAT**: Daily Birthday Wishes
+* **08:00 AM WAT**: Daily Welfare Check (3+ missed Sundays)
+* **06:30 AM WAT (Sundays)**: Sunday Check-in Reminder
+
+For cloud providers with external cron triggers (such as Railway Cron or cron-job.org), a secured webhook is also available:
+```
+GET /api/cron/run-jobs/?token=<CRON_SECRET_KEY>&job=birthdays|welfare|sunday|all
+```
 
 ## Day-to-day
 
-Both bulk sends have dashboard buttons at `/admin/dashboard/`, and both prompt
-for confirmation because they spend real money.
+Each bulk send has its own dedicated manual trigger button at `/admin/dashboard/` with confirmation prompts:
+1. **Sunday Reminder**
+2. **Birthday Wishes**
+3. **Welfare Check**
 
 From the command line:
 
 ```
-python manage.py send_checkin_reminders --dry-run   # preview + cost, sends nothing
+python manage.py send_birthday_reminders --dry-run   # preview today's birthdays
+python manage.py send_birthday_reminders             # sends birthday greetings
+
+python manage.py send_welfare_reminders --dry-run    # preview 3+ missed Sundays
+python manage.py send_welfare_reminders             # sends welfare follow-ups
+
+python manage.py send_checkin_reminders --dry-run   # preview Sunday reminders
 python manage.py send_checkin_reminders             # only sends on a Sunday
 python manage.py send_checkin_reminders --force     # send today whatever day it is
-python manage.py run_reminders --dry-run            # birthdays + welfare preview
-python manage.py run_reminders
+
+python manage.py run_reminders                      # runs both birthday & welfare (legacy/combined)
 ```
 
 `--dry-run` prints recipient counts and **billable SMS pages** before you spend

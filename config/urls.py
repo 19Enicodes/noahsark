@@ -23,7 +23,13 @@ urlpatterns = [
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('admin/approve/<int:worker_id>/', views.approve_worker, name='approve_worker'),
     path('admin/export/', views.export_workers, name='export_workers'),
+    path('admin/send-birthdays/', views.send_birthday_trigger, name='send_birthday_trigger'),
+    path('admin/send-welfare/', views.send_welfare_trigger, name='send_welfare_trigger'),
     path('admin/run-reminders/', views.run_reminders_trigger, name='run_reminders_trigger'),
     path('admin/send-reminders/', views.send_reminders_trigger, name='send_reminders_trigger'),
+    path('admin/update-profile/', views.admin_update_profile, name='admin_update_profile'),
+
+    # Automated Cron Webhook Endpoint
+    path('api/cron/run-jobs/', views.cron_run_jobs, name='cron_run_jobs'),
 ]
 

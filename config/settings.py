@@ -46,9 +46,27 @@ load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = 'django-insecure-&ae1a2gbd@v55bb$!z=mrtjar+pwmz^t_j0gj5b3i)thf#bpag'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'naycas.com',
+    'www.naycas.com',
+    '.railway.app',
+    '.up.railway.app',
+    'localhost',
+    '127.0.0.1',
+]
+if os.environ.get('ALLOWED_HOSTS'):
+    ALLOWED_HOSTS.extend([h.strip() for h in os.environ['ALLOWED_HOSTS'].split(',') if h.strip()])
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://naycas.com',
+    'https://www.naycas.com',
+    'https://*.railway.app',
+    'https://*.up.railway.app',
+]
+if os.environ.get('CSRF_TRUSTED_ORIGINS'):
+    CSRF_TRUSTED_ORIGINS.extend([o.strip() for o in os.environ['CSRF_TRUSTED_ORIGINS'].split(',') if o.strip()])
 
 
 # Application definition
@@ -65,6 +83,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -131,7 +150,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = os.environ.get('TIME_ZONE', 'Africa/Lagos')
 
 USE_I18N = True
 
@@ -142,6 +161,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -179,4 +200,11 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 
 # Church identity used in message signatures and email chrome.
 CHURCH_NAME = "Noah's Ark"
+
+# --------------------------------------------------------------------------
+# Automated Message Scheduler (Background Daemon & Cron Webhook)
+# --------------------------------------------------------------------------
+AUTOMATED_SCHEDULER_ENABLED = os.environ.get('AUTOMATED_SCHEDULER_ENABLED', 'true').lower() in ('1', 'true', 'yes')
+CRON_SECRET_KEY = os.environ.get('CRON_SECRET_KEY', 'noahs-ark-cron-secret-2026')
+
 

@@ -6,12 +6,16 @@ suite verifies routing, dedupe and text handling without spending money.
 """
 
 from datetime import date, timedelta
+from io import StringIO
 from unittest.mock import patch
 
+from django.conf import settings
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.utils import timezone
+from django.contrib.auth.models import User
 
-from . import notifications
+from . import notifications, scheduler
 from .attendance import calculate_consecutive_misses, get_current_sunday_reference
 from .models import AlertLog, CheckIn, Department, Worker
 
@@ -318,3 +322,127 @@ class PreviewTests(WorkerFactoryMixin, TestCase):
         summary = notifications.preview(Worker.objects.all(), notifications.BIRTHDAY)
         self.assertEqual(summary['skipped'], 1)
         self.assertEqual(summary['sms_recipients'], 0)
+
+
+class AdminProfileUpdateTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('testadmin', 'admin@example.com', 'InitialPass123!')
+        self.client.login(username='testadmin', password='InitialPass123!')
+
+    def test_update_username_and_email_with_correct_password(self):
+        response = self.client.post('/admin/update-profile/', {
+            'username': 'newadmin',
+            'email': 'newemail@example.com',
+            'current_password': 'InitialPass123!',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.admin.refresh_from_db()
+        self.assertEqual(self.admin.username, 'newadmin')
+        self.assertEqual(self.admin.email, 'newemail@example.com')
+
+    def test_update_password_with_correct_current_password(self):
+        response = self.client.post('/admin/update-profile/', {
+            'username': 'testadmin',
+            'email': 'admin@example.com',
+            'current_password': 'InitialPass123!',
+            'new_password': 'BrandNewPass456!',
+            'confirm_password': 'BrandNewPass456!',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.check_password('BrandNewPass456!'))
+
+    def test_update_rejected_with_wrong_password(self):
+        response = self.client.post('/admin/update-profile/', {
+            'username': 'hackedadmin',
+            'email': 'hacked@example.com',
+            'current_password': 'WrongPassword!',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.admin.refresh_from_db()
+        self.assertEqual(self.admin.username, 'testadmin')
+
+
+@patch.object(notifications, 'send_email', return_value=(True, 'ok'))
+@patch.object(notifications, 'send_sms', return_value=(True, 'msg-123'))
+class SeparatedRemindersCommandTests(WorkerFactoryMixin, TestCase):
+    def test_send_birthday_reminders_command_only_targets_today(self, mock_sms, mock_email):
+        today = timezone.localdate()
+        celebrant = self.make_worker(name='Today Celebrant', email='celebrant@example.com')
+        celebrant.birthday = today
+        celebrant.save()
+
+        other = self.make_worker(name='Other Worker', email='other@example.com')
+        other.birthday = today + timedelta(days=50)
+        other.save()
+
+        out = StringIO()
+        call_command('send_birthday_reminders', stdout=out, stderr=out, no_color=True)
+
+        self.assertTrue(AlertLog.objects.filter(worker=celebrant, type=notifications.BIRTHDAY).exists())
+        self.assertFalse(AlertLog.objects.filter(worker=other, type=notifications.BIRTHDAY).exists())
+
+    def test_run_reminders_selective_flags(self, mock_sms, mock_email):
+        today = timezone.localdate()
+        celebrant = self.make_worker(name='Celebrant Flag', email='celebrant2@example.com')
+        celebrant.birthday = today
+        celebrant.save()
+
+        out = StringIO()
+        call_command('run_reminders', birthdays_only=True, stdout=out, stderr=out, no_color=True)
+        self.assertTrue(AlertLog.objects.filter(worker=celebrant, type=notifications.BIRTHDAY).exists())
+
+
+@patch.object(notifications, 'send_email', return_value=(True, 'ok'))
+@patch.object(notifications, 'send_sms', return_value=(True, 'msg-123'))
+class SeparatedTriggersViewTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser('adminuser', 'admin@example.com', 'AdminPass123!')
+        self.client.login(username='adminuser', password='AdminPass123!')
+
+    def test_send_birthday_trigger_post_success(self, mock_sms, mock_email):
+        response = self.client.post('/admin/send-birthdays/')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/admin/dashboard/')
+
+    def test_send_welfare_trigger_post_success(self, mock_sms, mock_email):
+        response = self.client.post('/admin/send-welfare/')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/admin/dashboard/')
+
+    def test_send_birthday_trigger_get_rejected(self, mock_sms, mock_email):
+        response = self.client.get('/admin/send-birthdays/')
+        self.assertEqual(response.status_code, 405)
+
+
+@patch.object(notifications, 'send_email', return_value=(True, 'ok'))
+@patch.object(notifications, 'send_sms', return_value=(True, 'msg-123'))
+class CronEndpointTests(TestCase):
+    def test_cron_endpoint_unauthorized_without_token(self, mock_sms, mock_email):
+        response = self.client.get('/api/cron/run-jobs/')
+        self.assertEqual(response.status_code, 401)
+
+    def test_cron_endpoint_unauthorized_with_wrong_token(self, mock_sms, mock_email):
+        response = self.client.get('/api/cron/run-jobs/?token=wrong-secret-token')
+        self.assertEqual(response.status_code, 401)
+
+    def test_cron_endpoint_authorized_with_valid_token(self, mock_sms, mock_email):
+        secret = getattr(settings, 'CRON_SECRET_KEY', 'noahs-ark-cron-secret-2026')
+        response = self.client.get(f'/api/cron/run-jobs/?token={secret}&job=birthdays')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['status'], 'success')
+        self.assertIn('birthdays', data['results'])
+
+
+@patch.object(notifications, 'send_email', return_value=(True, 'ok'))
+@patch.object(notifications, 'send_sms', return_value=(True, 'msg-123'))
+class SchedulerFunctionsTests(TestCase):
+    def test_scheduler_jobs_execute_safely(self, mock_sms, mock_email):
+        b_res = scheduler.run_birthday_job(force=True)
+        self.assertIsInstance(b_res, str)
+
+        w_res = scheduler.run_welfare_job(force=True)
+        self.assertIsInstance(w_res, str)
+
+

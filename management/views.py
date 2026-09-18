@@ -1,10 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout, update_session_auth_hash
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 from datetime import date, datetime
 import csv
 from io import StringIO
@@ -290,7 +292,37 @@ def export_workers(request):
         
     return response
 
-# Trigger Automated Reminders Action
+# Trigger Birthday Wishes Action
+@superuser_required
+@require_POST
+def send_birthday_trigger(request):
+    try:
+        output = StringIO()
+        call_command('send_birthday_reminders', stdout=output, stderr=output, no_color=True)
+        messages.success(
+            request,
+            f"✅ Birthday check complete. {_summarise_command_output(output.getvalue())}"
+        )
+    except Exception as e:
+        messages.error(request, f"❌ Failed to send birthday wishes: {str(e)}")
+    return redirect('admin_dashboard')
+
+# Trigger Welfare Follow-ups Action
+@superuser_required
+@require_POST
+def send_welfare_trigger(request):
+    try:
+        output = StringIO()
+        call_command('send_welfare_reminders', stdout=output, stderr=output, no_color=True)
+        messages.success(
+            request,
+            f"✅ Welfare check complete. {_summarise_command_output(output.getvalue())}"
+        )
+    except Exception as e:
+        messages.error(request, f"❌ Failed to send welfare follow-ups: {str(e)}")
+    return redirect('admin_dashboard')
+
+# Trigger Automated Reminders Action (Legacy combined fallback)
 # POST-only: these spend real money, so a refresh, double-click or browser
 # prefetch must not be able to re-fire them.
 @superuser_required
@@ -325,8 +357,86 @@ def send_reminders_trigger(request):
         messages.error(request, f"❌ Failed to send Sunday reminders: {str(e)}")
     return redirect('admin_dashboard')
 
+# External Cron / Webhook Endpoint
+@csrf_exempt
+def cron_run_jobs(request):
+    """
+    Secured webhook endpoint that can be called by external schedulers (e.g. Railway Cron, cron-job.org).
+    Requires a matching token parameter or X-Cron-Key header.
+    Usage: GET/POST /api/cron/run-jobs/?token=<CRON_SECRET_KEY>&job=birthdays|welfare|sunday|all
+    """
+    token = request.GET.get('token') or request.POST.get('token') or request.headers.get('X-Cron-Key')
+    expected_token = getattr(settings, 'CRON_SECRET_KEY', 'noahs-ark-cron-secret-2026')
+
+    if not token or token != expected_token:
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=401)
+
+    job = request.GET.get('job') or request.POST.get('job') or 'all'
+    job = job.lower()
+
+    from .scheduler import run_birthday_job, run_welfare_job, run_sunday_job
+
+    results = {}
+    force = request.GET.get('force', '0') in ('1', 'true') or request.POST.get('force', '0') in ('1', 'true')
+
+    if job in ('birthdays', 'birthday', 'all'):
+        results['birthdays'] = run_birthday_job(force=force)
+    if job in ('welfare', 'all'):
+        results['welfare'] = run_welfare_job(force=force)
+    if job in ('sunday', 'all'):
+        results['sunday'] = run_sunday_job(force=force)
+
+    return JsonResponse({'status': 'success', 'job': job, 'results': results})
+
 
 def _summarise_command_output(raw_output):
     """Pull the command's final summary line out for the dashboard message."""
     lines = [line.strip() for line in raw_output.splitlines() if line.strip()]
     return lines[-1] if lines else 'See server logs for details.'
+
+
+# Update Admin Credentials / Password Action
+@superuser_required
+@require_POST
+def admin_update_profile(request):
+    user = request.user
+    new_username = request.POST.get('username', '').strip()
+    new_email = request.POST.get('email', '').strip()
+    current_password = request.POST.get('current_password', '')
+    new_password = request.POST.get('new_password', '')
+    confirm_password = request.POST.get('confirm_password', '')
+
+    # Verify current password
+    if not user.check_password(current_password):
+        messages.error(request, "❌ Current password is incorrect. Profile changes were not saved.")
+        return redirect('admin_dashboard')
+
+    # Validate and update username
+    if new_username and new_username != user.username:
+        if User.objects.filter(username=new_username).exclude(id=user.id).exists():
+            messages.error(request, f"❌ Username '{new_username}' is already taken.")
+            return redirect('admin_dashboard')
+        user.username = new_username
+
+    # Update email
+    user.email = new_email
+
+    # If changing password
+    if new_password:
+        if new_password != confirm_password:
+            messages.error(request, "❌ New passwords do not match.")
+            return redirect('admin_dashboard')
+        if len(new_password) < 8:
+            messages.error(request, "❌ New password must be at least 8 characters long.")
+            return redirect('admin_dashboard')
+        user.set_password(new_password)
+        user.save()
+        # Keep user logged in after password change
+        update_session_auth_hash(request, user)
+        messages.success(request, "✅ Admin credentials and password updated successfully!")
+    else:
+        user.save()
+        messages.success(request, "✅ Admin profile details updated successfully!")
+
+    return redirect('admin_dashboard')
+
