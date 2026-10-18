@@ -79,7 +79,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'anymail',
     'management',
+    
 ]
 
 MIDDLEWARE = [
@@ -195,6 +197,8 @@ DEFAULT_FROM_EMAIL = os.environ.get(
     'DEFAULT_FROM_EMAIL',
     f"Noah's Ark <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else 'webmaster@localhost',
 )
+
+ANYMAIL = {'RESEND_API_KEY': os.environ.get('RESEND_API_KEY', '')}
 
 # Church identity used in message signatures and email chrome.
 CHURCH_NAME = "Noah's Ark"
