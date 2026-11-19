@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('admin/approve/<int:worker_id>/', views.approve_worker, name='approve_worker'),
     path('admin/export/', views.export_workers, name='export_workers'),
+    path('admin/export-attendance/', views.export_sunday_attendance, name='export_sunday_attendance'),
     path('admin/send-birthdays/', views.send_birthday_trigger, name='send_birthday_trigger'),
     path('admin/send-welfare/', views.send_welfare_trigger, name='send_welfare_trigger'),
     path('admin/run-reminders/', views.run_reminders_trigger, name='run_reminders_trigger'),

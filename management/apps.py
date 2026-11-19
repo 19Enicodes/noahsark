@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import os
 from django.apps import AppConfig
 
@@ -13,8 +13,13 @@ class ManagementConfig(AppConfig):
         if set(sys.argv) & skip_commands:
             return
 
-        # Under runserver, wait for the child reload process so it does not start twice
-        if 'runserver' in sys.argv and os.environ.get('RUN_MAIN') != 'true':
+        # Only start scheduler for web server processes (runserver child, gunicorn, Railway, etc.)
+        is_web_server = (
+            ('runserver' in sys.argv and os.environ.get('RUN_MAIN') == 'true')
+            or 'gunicorn' in ' '.join(sys.argv).lower()
+            or (os.environ.get('PORT') is not None and 'manage.py' not in sys.argv[0])
+        )
+        if not is_web_server:
             return
 
         try:

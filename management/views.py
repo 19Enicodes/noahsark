@@ -11,6 +11,7 @@ from datetime import date, datetime
 import csv
 from io import StringIO
 from django.core.management import call_command
+from django.db.models import Q
 
 from .models import Worker, Department, CheckIn, SystemSetting
 from .attendance import get_current_sunday_reference, calculate_consecutive_misses
@@ -165,9 +166,16 @@ def admin_login(request):
         return redirect('admin_setup')
         
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
+        raw_login = (request.POST.get('username') or '').strip()
+        password = request.POST.get('password') or ''
+
+        # Support login with either username or email (case-insensitive) and strip spaces
+        user_obj = User.objects.filter(
+            Q(username__iexact=raw_login) | Q(email__iexact=raw_login)
+        ).first()
+        resolved_username = user_obj.username if user_obj else raw_login
+
+        user = authenticate(request, username=resolved_username, password=password)
         
         if user is not None and user.is_superuser:
             auth_login(request, user)
@@ -186,6 +194,35 @@ def admin_logout(request):
 def superuser_required(view_func):
     return user_passes_test(lambda u: u.is_superuser, login_url='admin_login')(view_func)
 
+def _resolve_sunday_param(request, current_ref_date):
+    """
+    Safely resolves the requested Sunday date from request.GET, handling:
+    - Single date parameter (?date=2026-09-20)
+    - Duplicate date parameters (?date=2026-09-20&date=2026-11-22) by prioritizing
+      any historical / explicitly chosen date over the default/current reference date.
+    - Invalid date formats (falls back to current_ref_date).
+    """
+    raw_dates = [d.strip() for d in request.GET.getlist('date') if d.strip()]
+    if not raw_dates:
+        return current_ref_date
+
+    parsed_dates = []
+    for raw in raw_dates:
+        try:
+            parsed_dates.append(datetime.strptime(raw, '%Y-%m-%d').date())
+        except ValueError:
+            continue
+
+    if not parsed_dates:
+        return current_ref_date
+
+    # If multiple dates were passed, prefer any date that differs from current_ref_date
+    for d in parsed_dates:
+        if d != current_ref_date:
+            return d
+
+    return parsed_dates[0]
+
 # Admin Dashboard
 @superuser_required
 def admin_dashboard(request):
@@ -199,23 +236,56 @@ def admin_dashboard(request):
             pin_setting.save()
             messages.success(request, "Sunday PIN updated successfully.")
             
-    # Calculate attendance stats for the nearest Sunday
-    ref_date = get_current_sunday_reference()
-    total_active = Worker.objects.filter(status='ACTIVE').count()
-    present_today = CheckIn.objects.filter(sunday_reference=ref_date).count()
-    absent_today = total_active - present_today
+    # Determine selected Sunday reference date
+    current_ref_date = get_current_sunday_reference()
+    selected_sunday = _resolve_sunday_param(request, current_ref_date)
+
+    # Get list of all distinct Sundays with check-in records for dropdown
+    recorded_sundays = list(
+        CheckIn.objects.values_list('sunday_reference', flat=True)
+        .distinct()
+        .order_by('-sunday_reference')
+    )
+    if current_ref_date not in recorded_sundays:
+        recorded_sundays.insert(0, current_ref_date)
+    if selected_sunday not in recorded_sundays:
+        recorded_sundays.append(selected_sunday)
+        recorded_sundays.sort(reverse=True)
+
+    # Attendees for the selected Sunday
+    attendee_checkins = list(
+        CheckIn.objects.filter(sunday_reference=selected_sunday)
+        .select_related('worker', 'worker__department')
+        .order_by('check_in_time')
+    )
+    present_worker_ids = {c.worker_id for c in attendee_checkins}
+    present_today = len(attendee_checkins)
+
+    # Active workers eligible on or before this Sunday
+    eligible_workers = list(
+        Worker.objects.filter(
+            status='ACTIVE',
+            date_joined__date__lte=selected_sunday
+        ).select_related('department').order_by('full_name')
+    )
+    total_active = len(eligible_workers)
+    if total_active < present_today:
+        eligible_workers = list(Worker.objects.filter(status='ACTIVE').select_related('department').order_by('full_name'))
+        total_active = len(eligible_workers)
+
+    absent_workers = [w for w in eligible_workers if w.id not in present_worker_ids]
+    absent_today = max(0, total_active - present_today)
     
     # Approvals list
     pending_workers = Worker.objects.filter(status='PENDING').order_by('-date_joined')
     
-    # Welfare Lists (Yellow and Red Flags)
+    # Welfare Lists (Yellow and Red Flags) - based on current live cycle
     active_workers = Worker.objects.filter(status='ACTIVE')
     yellow_flag_workers = []
     red_flag_workers = []
     
     for worker in active_workers:
-        # Check if already checked in today
-        checked_in_today = CheckIn.objects.filter(worker=worker, sunday_reference=ref_date).exists()
+        checked_in_today = CheckIn.objects.filter(worker=worker, sunday_reference=current_ref_date).exists()
         if checked_in_today:
             continue
             
@@ -225,23 +295,48 @@ def admin_dashboard(request):
         elif misses >= 3:
             red_flag_workers.append({'worker': worker, 'misses': misses})
             
-    # Attendance by department stats
-    departments = Department.objects.all()
+    # Attendance by department stats for selected Sunday
+    departments = Department.objects.all().order_by('name')
     dept_stats = []
     for dept in departments:
-        dept_active = Worker.objects.filter(department=dept, status='ACTIVE').count()
-        dept_present = CheckIn.objects.filter(worker__department=dept, sunday_reference=ref_date).count()
+        dept_present_checkins = [c for c in attendee_checkins if c.worker.department_id == dept.id]
+        dept_absent_workers = [w for w in absent_workers if w.department_id == dept.id]
+        dept_present = len(dept_present_checkins)
+        dept_active = dept_present + len(dept_absent_workers)
         percentage = int((dept_present / dept_active * 100)) if dept_active > 0 else 0
         dept_stats.append({
             'department': dept,
             'active': dept_active,
             'present': dept_present,
-            'percentage': percentage
+            'percentage': percentage,
+            'present_checkins': dept_present_checkins,
+            'absent_workers': dept_absent_workers,
+        })
+
+    # If there are workers or attendees without an assigned department
+    unassigned_checkins = [c for c in attendee_checkins if not c.worker.department_id]
+    unassigned_absent = [w for w in absent_workers if not w.department_id]
+    if unassigned_checkins or unassigned_absent:
+        unassigned_present = len(unassigned_checkins)
+        unassigned_active = unassigned_present + len(unassigned_absent)
+        percentage = int((unassigned_present / unassigned_active * 100)) if unassigned_active > 0 else 0
+        dept_stats.append({
+            'department': {'id': 'unassigned', 'name': 'General / Unassigned'},
+            'active': unassigned_active,
+            'present': unassigned_present,
+            'percentage': percentage,
+            'present_checkins': unassigned_checkins,
+            'absent_workers': unassigned_absent,
         })
 
     context = {
         'sunday_pin': pin_setting.value,
-        'ref_date': ref_date,
+        'ref_date': selected_sunday,
+        'current_ref_date': current_ref_date,
+        'is_historical': (selected_sunday != current_ref_date),
+        'recorded_sundays': recorded_sundays,
+        'attendee_checkins': attendee_checkins,
+        'absent_workers': absent_workers,
         'total_active': total_active,
         'present_today': present_today,
         'absent_today': absent_today,
@@ -252,6 +347,86 @@ def admin_dashboard(request):
     }
     
     return render(request, 'management/admin_dashboard.html', context)
+
+# Export Specific Sunday Attendance Record as CSV
+@superuser_required
+def export_sunday_attendance(request):
+    current_ref_date = get_current_sunday_reference()
+    selected_sunday = _resolve_sunday_param(request, current_ref_date)
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="sunday_attendance_{selected_sunday}.csv"'
+    response.write('\ufeff')  # UTF-8 BOM for Microsoft Excel
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'Sunday Date',
+        'Worker Name',
+        'NARK Code',
+        'Department',
+        'Phone Number',
+        'Email',
+        'Attendance Status',
+        'Check-in Time',
+        'Checked In By (Usher)'
+    ])
+
+    # Check-ins for this Sunday
+    attendee_checkins = list(
+        CheckIn.objects.filter(sunday_reference=selected_sunday)
+        .select_related('worker', 'worker__department')
+        .order_by('check_in_time')
+    )
+    present_worker_ids = {c.worker_id for c in attendee_checkins}
+
+    # Active workers eligible on or before this Sunday
+    eligible_workers = list(
+        Worker.objects.filter(
+            status='ACTIVE',
+            date_joined__date__lte=selected_sunday
+        ).select_related('department').order_by('full_name')
+    )
+    if len(eligible_workers) < len(attendee_checkins):
+        eligible_workers = list(Worker.objects.filter(status='ACTIVE').select_related('department').order_by('full_name'))
+
+    absent_workers = [w for w in eligible_workers if w.id not in present_worker_ids]
+
+    present_rows = []
+    for c in attendee_checkins:
+        w = c.worker
+        dept_name = w.department.name if w.department else 'None'
+        time_str = c.check_in_time.strftime('%I:%M %p') if c.check_in_time else 'Yes'
+        present_rows.append([
+            str(selected_sunday),
+            w.full_name,
+            w.nark_code,
+            dept_name,
+            w.phone_number,
+            w.email or '',
+            'PRESENT',
+            time_str,
+            c.usher_id or 'System'
+        ])
+
+    absent_rows = []
+    for w in absent_workers:
+        dept_name = w.department.name if w.department else 'None'
+        absent_rows.append([
+            str(selected_sunday),
+            w.full_name,
+            w.nark_code,
+            dept_name,
+            w.phone_number,
+            w.email or '',
+            'ABSENT',
+            '-',
+            '-'
+        ])
+
+    for row in present_rows + absent_rows:
+        writer.writerow(row)
+
+    return response
 
 # Approve Worker Action
 @superuser_required

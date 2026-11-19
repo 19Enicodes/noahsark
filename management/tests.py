@@ -90,13 +90,13 @@ class PhoneNumberTests(TestCase):
 
 
 class WorkerFactoryMixin:
-    def make_worker(self, name='Ada Obi', email=None, phone=None, status='ACTIVE'):
+    def make_worker(self, name='Ada Obi', email=None, phone=None, status='ACTIVE', department=None):
         return Worker.objects.create(
             full_name=name,
             phone_number=phone or f'080{Worker.objects.count():08d}',
             email=email,
             status=status,
-            department=self.department,
+            department=department or self.department,
         )
 
     def setUp(self):
@@ -444,5 +444,125 @@ class SchedulerFunctionsTests(TestCase):
 
         w_res = scheduler.run_welfare_job(force=True)
         self.assertIsInstance(w_res, str)
+
+
+class SundayAttendanceArchiveTests(WorkerFactoryMixin, TestCase):
+    def setUp(self):
+        super().setUp()
+        self.admin = User.objects.create_superuser('testadmin', 'admin@example.com', 'AdminPass123!')
+        self.client.login(username='testadmin', password='AdminPass123!')
+
+    def test_dashboard_renders_with_historical_date(self):
+        sunday_date = date(2026, 9, 13)
+        worker = self.make_worker(name='John Doe', email='john@example.com')
+        CheckIn.objects.create(
+            worker=worker,
+            sunday_reference=sunday_date,
+            usher_id='USHER-01'
+        )
+
+        response = self.client.get(f'/admin/dashboard/?date={sunday_date.strftime("%Y-%m-%d")}')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['ref_date'], sunday_date)
+        self.assertEqual(response.context['present_today'], 1)
+        self.assertContains(response, 'John Doe')
+        self.assertContains(response, 'Sunday Attendance Roster')
+
+    def test_export_sunday_attendance_csv(self):
+        sunday_date = date(2026, 9, 13)
+        present_worker = self.make_worker(name='Present Worker', email='present@example.com')
+        absent_worker = self.make_worker(name='Absent Worker', email='absent@example.com')
+
+        CheckIn.objects.create(
+            worker=present_worker,
+            sunday_reference=sunday_date,
+            usher_id='USHER-02'
+        )
+
+        response = self.client.get(f'/admin/export-attendance/?date={sunday_date.strftime("%Y-%m-%d")}')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv; charset=utf-8')
+        self.assertIn(f'attachment; filename="sunday_attendance_{sunday_date}.csv"', response['Content-Disposition'])
+
+        content = response.content.decode('utf-8-sig')
+        self.assertIn('Worker Name,NARK Code,Department,Phone Number,Email,Attendance Status,Check-in Time,Checked In By (Usher)', content)
+        self.assertIn('Present Worker', content)
+        self.assertIn('PRESENT', content)
+        self.assertIn('USHER-02', content)
+        self.assertIn('Absent Worker', content)
+        self.assertIn('ABSENT', content)
+
+    def test_export_sunday_attendance_requires_login(self):
+        self.client.logout()
+        response = self.client.get('/admin/export-attendance/')
+        self.assertEqual(response.status_code, 302)
+
+    def test_dashboard_with_duplicate_date_params_resolves_historical_date(self):
+        """Verify that ?date=2026-09-20&date=2026-11-22 prioritizes the historical selection."""
+        historical_date = date(2026, 9, 20)
+        current_date = date(2026, 11, 22)
+        worker = self.make_worker(name='Historical Attendee', email='hist@example.com')
+        CheckIn.objects.create(
+            worker=worker,
+            sunday_reference=historical_date,
+            usher_id='USHER-HIST'
+        )
+
+        response = self.client.get(f'/admin/dashboard/?date={historical_date}&date={current_date}')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['ref_date'], historical_date)
+        self.assertContains(response, 'Historical Attendee')
+
+    def test_export_csv_with_duplicate_date_params_resolves_historical_date(self):
+        """Verify CSV export properly prioritizes historical date even if duplicate dates are passed."""
+        historical_date = date(2026, 9, 20)
+        current_date = date(2026, 11, 22)
+        worker = self.make_worker(name='Historical Worker', email='histworker@example.com')
+        CheckIn.objects.create(
+            worker=worker,
+            sunday_reference=historical_date,
+            usher_id='USHER-HIST'
+        )
+
+        response = self.client.get(f'/admin/export-attendance/?date={historical_date}&date={current_date}')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(f'attachment; filename="sunday_attendance_{historical_date}.csv"', response['Content-Disposition'])
+        content = response.content.decode('utf-8-sig')
+        self.assertIn('Historical Worker', content)
+        self.assertIn(str(historical_date), content)
+
+    def test_dashboard_dept_stats_includes_attendee_breakdown(self):
+        """Verify dept_stats groups present and absent workers by department for modal inspection."""
+        sunday_date = date(2026, 9, 20)
+        dept, _ = Department.objects.get_or_create(name='Choir Department')
+        present_worker = self.make_worker(name='Choir Singer', email='singer@example.com', department=dept)
+        absent_worker = self.make_worker(name='Choir Pianist', email='pianist@example.com', department=dept)
+
+        CheckIn.objects.create(
+            worker=present_worker,
+            sunday_reference=sunday_date,
+            usher_id='USHER-CHOIR'
+        )
+
+        response = self.client.get(f'/admin/dashboard/?date={sunday_date}')
+        self.assertEqual(response.status_code, 200)
+
+        # Find Choir Department in dept_stats
+        choir_stat = next((s for s in response.context['dept_stats'] if s['department'].name == 'Choir Department'), None)
+        self.assertIsNotNone(choir_stat)
+        self.assertGreaterEqual(choir_stat['present'], 1)
+        self.assertGreaterEqual(choir_stat['active'], 2)
+        present_names = [c.worker.full_name for c in choir_stat['present_checkins']]
+        self.assertIn('Choir Singer', present_names)
+        absent_names = [w.full_name for w in choir_stat['absent_workers']]
+        self.assertIn('Choir Pianist', absent_names)
+
+        # Check modal markup is present in HTML
+        self.assertContains(response, 'id="departmentModal"')
+        self.assertContains(response, 'openDepartmentModal')
+        self.assertContains(response, 'Choir Singer')
+
+
+
 
 
