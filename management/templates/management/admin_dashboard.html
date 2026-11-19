@@ -120,20 +120,14 @@
     <header class="w-full border-b border-white/[0.06] bg-[#090A0E]/80 backdrop-blur-2xl sticky top-0 z-40 transition-all">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between relative z-10">
         <!-- Brand / Insignia -->
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-champagne-soft/25 via-champagne/15 to-transparent border border-champagne/40 text-champagne flex items-center justify-center flex-shrink-0 shadow-glow-champagne">
+        <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-2.5 sm:gap-3 min-w-0 group" title="Noah's Ark Admin Dashboard">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-champagne-soft/25 via-champagne/15 to-transparent border border-champagne/40 text-champagne flex items-center justify-center flex-shrink-0 shadow-glow-champagne group-hover:scale-105 transition-transform">
             <svg class="h-5 w-5 sm:h-5 sm:w-5 text-champagne" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
             </svg>
           </div>
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="font-extrabold text-base sm:text-lg tracking-tight leading-none text-white">Noah's Ark</span>
-              <span class="hidden sm:inline-block text-[10px] font-bold text-champagne bg-champagne/10 border border-champagne/25 px-2 py-0.5 rounded-full uppercase tracking-wider">Church System</span>
-            </div>
-            <span class="text-[10px] text-gray-400 font-semibold tracking-widest uppercase block truncate mt-0.5">Admin <span class="text-champagne font-mono">Command Center</span></span>
-          </div>
-        </div>
+          <span class="font-extrabold text-lg sm:text-xl tracking-tight text-white whitespace-nowrap group-hover:text-champagne transition-colors">Noah's Ark</span>
+        </a>
 
         <!-- Desktop Navigation & Controls (>= md) -->
         <div class="hidden md:flex items-center gap-3">
@@ -277,22 +271,70 @@
       </div>
       {% endif %}
 
+      <!-- Welcome Admin Section -->
+      <section class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1 pb-1">
+        <div>
+          <span class="text-[11px] uppercase font-mono tracking-widest text-champagne font-semibold flex items-center gap-1.5 mb-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-champagne animate-pulse"></span>
+            Noah's Ark Church Stewardship
+          </span>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            Welcome, <span class="text-transparent bg-clip-text bg-gradient-to-r from-champagne via-champagne-soft to-champagne">Admin</span> 👋
+          </h1>
+          <p class="text-xs sm:text-sm text-gray-400 mt-1 font-normal">
+            Attendance and pastoral welfare overview for <strong class="text-gray-200 font-semibold">{{ ref_date|date:"l, d F Y" }}</strong>
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          {% if is_historical %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+              Historical Archive
+            </span>
+            <a
+              href="{% url 'admin_dashboard' %}"
+              class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-champagne/15 text-champagne border border-champagne/30 text-xs font-semibold transition-all"
+            >
+              <span>Back to Current</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </a>
+          {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-semibold">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-glow-emerald animate-pulse"></span>
+              Live Service Cycle
+            </span>
+            <a
+              href="{% url 'usher_checkin' %}"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-gray-200 hover:text-white border border-white/[0.08] text-xs font-semibold transition-all"
+            >
+              <svg class="w-3.5 h-3.5 text-champagne" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Usher Console</span>
+            </a>
+          {% endif %}
+        </div>
+      </section>
+
       <!-- Row 1: Key Metrics Floating Stat Capsules -->
       <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <!-- Present Today Card -->
-        <div class="obsidian-card-interactive p-6 rounded-3xl flex flex-col justify-between scroll-reveal opacity-0 translate-y-6">
+        <div class="obsidian-card-interactive p-5 sm:p-6 rounded-3xl flex flex-col justify-between scroll-reveal opacity-0 translate-y-6">
           <div class="flex items-center justify-between">
-            <span class="text-xs text-gray-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+            <span class="text-xs text-gray-300 font-semibold flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-glow-emerald"></span>
               <span>Present Today</span>
             </span>
             <span class="text-[10px] font-mono text-emerald-300 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full font-bold">
-              Verified
+              {% if total_active %}{{ present_today|add:0 }} / {{ total_active }}{% else %}0{% endif %}
             </span>
           </div>
           <div class="mt-4 flex items-baseline gap-2">
             <span class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">{{ present_today }}</span>
-            <span class="text-xs text-gray-400 font-mono font-medium">/ {{ total_active }} active</span>
+            <span class="text-xs text-gray-400 font-mono font-medium">/ {{ total_active }} active workers</span>
           </div>
           <!-- Segmented Progress Bar -->
           <div class="w-full bg-black/40 rounded-full h-2 mt-5 p-0.5 border border-white/[0.04] overflow-hidden">
@@ -301,30 +343,30 @@
         </div>
 
         <!-- Absent Today Card -->
-        <div class="obsidian-card-interactive p-6 rounded-3xl flex flex-col justify-between scroll-reveal opacity-0 translate-y-6" style="transition-delay: 75ms;">
+        <div class="obsidian-card-interactive p-5 sm:p-6 rounded-3xl flex flex-col justify-between scroll-reveal opacity-0 translate-y-6" style="transition-delay: 75ms;">
           <div class="flex items-center justify-between">
-            <span class="text-xs text-gray-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+            <span class="text-xs text-gray-300 font-semibold flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-rose-400 shadow-glow-rose"></span>
               <span>Absent Today</span>
             </span>
             <span class="text-[10px] font-mono text-rose-300 bg-rose-500/10 border border-rose-500/25 px-2 py-0.5 rounded-full font-bold">
-              Follow-up
+              Welfare List
             </span>
           </div>
           <div class="mt-4">
             <span class="text-4xl sm:text-5xl font-extrabold text-rose-400 tracking-tight">{{ absent_today }}</span>
           </div>
-          <span class="text-[11px] text-gray-400 mt-5 block font-medium">Flagged for automated welfare outreach</span>
+          <span class="text-[11px] text-gray-400 mt-5 block font-medium">Flagged for pastoral check-in</span>
         </div>
 
         <!-- Sunday Reference Card -->
-        <div class="obsidian-card-interactive p-6 rounded-3xl flex flex-col justify-between scroll-reveal opacity-0 translate-y-6" style="transition-delay: 150ms;">
+        <div class="obsidian-card-interactive p-5 sm:p-6 rounded-3xl flex flex-col justify-between scroll-reveal opacity-0 translate-y-6" style="transition-delay: 150ms;">
           <div class="flex items-center justify-between">
-            <span class="text-xs text-gray-400 font-bold uppercase tracking-wider">Sunday Cycle</span>
+            <span class="text-xs text-gray-300 font-semibold">Service Date</span>
             {% if is_historical %}
               <span class="text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Historical</span>
             {% else %}
-              <span class="text-[10px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Current Live</span>
+              <span class="text-[10px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Current</span>
             {% endif %}
           </div>
           <div class="mt-4">
@@ -335,15 +377,15 @@
               <span>← Back to latest Sunday</span>
             </a>
           {% else %}
-            <span class="text-[11px] text-gray-400 mt-4 block font-medium">Active church service cycle</span>
+            <span class="text-[11px] text-gray-400 mt-4 block font-medium">{{ ref_date|date:"l" }} Service</span>
           {% endif %}
         </div>
 
         <!-- Sunday PIN Setup Card -->
-        <div class="obsidian-card-interactive p-6 rounded-3xl flex flex-col justify-between scroll-reveal opacity-0 translate-y-6" style="transition-delay: 225ms;">
+        <div class="obsidian-card-interactive p-5 sm:p-6 rounded-3xl flex flex-col justify-between scroll-reveal opacity-0 translate-y-6" style="transition-delay: 225ms;">
           <div class="flex items-center justify-between">
-            <span class="text-xs text-gray-400 font-bold uppercase tracking-wider">Active Sunday PIN</span>
-            <span class="text-[10px] text-gray-500 font-mono">Usher Console</span>
+            <span class="text-xs text-gray-300 font-semibold">Check-in PIN</span>
+            <span class="text-[10px] text-gray-500 font-mono">Usher Code</span>
           </div>
           <form method="POST" class="mt-4 flex gap-2">
             {% csrf_token %}
